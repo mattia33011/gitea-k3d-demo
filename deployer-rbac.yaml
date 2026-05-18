@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: gitea-deployer
+  namespace: gitea
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: gitea-deployer-token
+  namespace: gitea
+  annotations:
+    kubernetes.io/service-account.name: gitea-deployer
+type: kubernetes.io/service-account-token
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: gitea-deployer
+  namespace: gitea
+rules:
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "create", "update", "patch"]
+- apiGroups: [""]
+  resources: ["services", "configmaps", "pods"]
+  verbs: ["get", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: gitea-deployer
+  namespace: gitea
+subjects:
+- kind: ServiceAccount
+  name: gitea-deployer
+  namespace: gitea
+roleRef:
+  kind: Role
+  apiGroup: rbac.authorization.k8s.io
+  name: gitea-deployer

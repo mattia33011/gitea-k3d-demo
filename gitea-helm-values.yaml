@@ -1,0 +1,43 @@
+gitea:
+  admin:
+    existingSecret: gitea-admin-secret
+  config:
+    database:
+      AUTOMIGRATE: true # Enable Auto migrate on runtime
+      DB_TYPE: postgres
+      HOST: gitea-postgresql:5432
+      NAME: gitea
+      USER: gitea
+    actions:
+      ENABLED: true
+    packages:
+      ENABLED: true
+init:
+  migrateDatabase: false # Disables blocking check in the init-container
+
+ingress:
+  enabled: true
+  className: "traefik" # k3d use Traefik by default
+  annotations:
+    kubernetes.io/ingress.class: traefik
+  hosts:
+    - host: 127.0.0.1.nip.io # fake local host
+      paths:
+        - path: /
+          pathType: Prefix
+  
+postgresql-ha:
+  enabled: false
+valkey-cluster:
+  enabled: false
+
+postgresql:
+  enabled: true
+  auth:
+    database: gitea
+    username: gitea
+    password: "gitealocalpassword"
+
+valkey:
+  enabled: true
+  architecture: standalone

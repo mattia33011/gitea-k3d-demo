@@ -1,0 +1,44 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ttl.sh/gitea-demo-app:24h
+
+  deploy:
+    runs-on: k8s-deploy
+    needs: build-and-push
+    permissions:
+      contents: read
+
+    steps:
+      - name: Deploy on K8s
+        env:
+          KUBECONFIG_DATA: ${{ secrets.KUBE_CONFIG }}
+        run: |
+          echo "$KUBECONFIG_DATA" | base64 -d > /tmp/kubeconfig
+          export KUBECONFIG=/tmp/kubeconfig
+          curl -fsSL "http://gitea-http:3000/${{ github.repository }}/raw/branch/main/deployment.yaml" \
+            -u "${{ secrets.REGISTRY_USER }}:${{ secrets.REGISTRY_PASSWORD }}" \
+            -o deployment.yaml
+          kubectl apply -f deployment.yaml
